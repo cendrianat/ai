@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Analisis Agroindustri Kelapa Sawit 🌳</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css"/>
+    <script type="text/javascript" src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+
+    <style>
+        /* 🎨 CSS Khusus untuk Nuansa Kelapa Sawit (Hijau & Coklat) */
+        :root {
+            --palm-green-dark: #004d40; /* Hijau Tua/Emerald */
+            --palm-green-light: #4caf50; /* Hijau Sedang */
+            --palm-accent: #a5d6a7; /* Hijau Muda/Aksen */
+            --text-color: #333;
+            --bg-light: #f4f7f6;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-light);
+            color: var(--text-color);
+        }
+
+        .header {
+            background-color: var(--palm-green-dark);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 2em;
+        }
+
+        .container {
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .kpi-cards {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .kpi-card {
+            flex: 1;
+            min-width: 200px;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            border-left: 5px solid var(--palm-green-light);
+            transition: transform 0.3s;
+        }
+ 
+        .kpi-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .kpi-card .value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: var(--palm-green-dark);
+        }
+
+        .kpi-card .label {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .chart-container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            min-height: 350px;
+        }
+
+        .table-container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Styling untuk DataTables */
+        #dataTabel_wrapper .dataTables_filter input,
+        #dataTabel_wrapper .dataTables_length select {
+            border: 1px solid var(--palm-accent);
+            padding: 5px;
+            border-radius: 4px;
+        }
+        table.dataTable thead th {
+            background-color: var(--palm-green-light);
+            color: white;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .btn-download {
+            background-color: var(--palm-green-light);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-weight: bold;
+        }
+
+        .btn-download:hover {
+            background-color: var(--palm-green-dark);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>🌳 Dashboard Analisis Operasi Kelapa Sawit 📈</h1>
+        <p>Aplikasi Interaktif untuk Manajer dan Teknisi Pabrik</p>
+    </div>
+
+    <div class="container">
+        <div class="controls">
+            <div>
+                <label for="filterBulan">Filter Bulan/Tahun:</label>
+                <select id="filterBulan" style="padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
+                    <option value="Semua">Semua Data</option>
+                    <option value="Jan-2024">Januari 2024</option>
+                    <option value="Feb-2024">Februari 2024</option>
+                    <option value="Mar-2024">Maret 2024</option>
+                </select>
+            </div>
+            <button class="btn-download" onclick="unduhData()">⬇️ Unduh Data (CSV)</button>
+        </div>
+
+        <h2>🔬 Metrik Kunci Kinerja (KPI)</h2>
+        <div class="kpi-cards">
+            <div class="kpi-card">
+                <div class="value" id="kpiTotalProduksi">0</div>
+                <div class="label">Total Produksi TBS (Ton)</div>
+            </div>
+            <div class="kpi-card">
+                <div class="value" id="kpiRataHarga">Rp 0</div>
+                <div class="label">Rata-rata Harga Jual (Rp/Kg)</div>
+            </div>
+            <div class="kpi-card">
+                <div class="value" id="kpiTotalArea">200 Ha</div>
+                <div class="label">Total Area Kebun</div>
+            </div>
+            <div class="kpi-card">
+                <div class="value" id="kpiYield">0 Ton/Ha</div>
+                <div class="label">Rata-rata Yield (TBS)</div>
+            </div>
+        </div>
+
+        <h2>📊 Visualisasi Data Interaktif</h2>
+        <div class="chart-grid">
+            <div class="chart-container">
+                <h3>Produksi TBS Bulanan (Ton)</h3>
+                <canvas id="chartProduksi"></canvas>
+            </div>
+            <div class="chart-container">
+                <h3>Fluktuasi Harga Jual CPO (Rp/Kg)</h3>
+                <canvas id="chartHarga"></canvas>
+            </div>
+            <div class="chart-container">
+                <h3>Distribusi Penjualan Berdasarkan Produk (%)</h3>
+                <canvas id="chartPenjualanPie"></canvas>
+            </div>
+            <div class="chart-container">
+                <h3>Rendemen (OER) per Periode</h3>
+                <canvas id="chartRendemen"></canvas>
+            </div>
+        </div>
+
+        <h2>📋 Data Operasional Detail</h2>
+        <div class="table-container">
+            <table id="dataTabel" class="display" style="width:100%">
+                <thead>
+                    <tr>
+                        <th>Periode</th>
+                        <th>Blok/Area (Ha)</th>
+                        <th>Produksi TBS (Ton)</th>
+                        <th>Penjualan CPO (Kg)</th>
+                        <th>Harga CPO (Rp/Kg)</th>
+                        <th>Rendemen (OER)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    </tbody>
+            </table>
+        </div>
+
+    </div>
+
+    <script>
+        // 💾 Data Mentah (Simulasi data yang diekstrak dari file yang diunggah)
+        const rawData = [
+            { periode: "Jan-2024", blok: "A1", area: 50, tbs: 1000, cpoJual: 200000, hargaCPO: 12500, oer: 0.20 },
+            { periode: "Jan-2024", blok: "B2", area: 50, tbs: 1200, cpoJual: 240000, hargaCPO: 12450, oer: 0.20 },
+            { periode: "Feb-2024", blok: "A1", area: 50, tbs: 1100, cpoJual: 210000, hargaCPO: 13000, oer: 0.19 },
+            { periode: "Feb-2024", blok: "B2", area: 50, tbs: 1300, cpoJual: 270000, hargaCPO: 13100, oer: 0.21 },
+            { periode: "Mar-2024", blok: "A1", area: 50, tbs: 1500, cpoJual: 300000, hargaCPO: 13500, oer: 0.20 },
+            { periode: "Mar-2024", blok: "B2", area: 50, tbs: 1400, cpoJual: 290000, hargaCPO: 13400, oer: 0.21 },
+            // Total area: 6 * 50 = 300 Ha (Contoh, bisa disesuaikan ke 200 Ha)
+            { periode: "Jan-2024", blok: "C3", area: 50, tbs: 900, cpoJual: 180000, hargaCPO: 12400, oer: 0.20 },
+            { periode: "Feb-2024", blok: "C3", area: 50, tbs: 1050, cpoJual: 200000, hargaCPO: 13050, oer: 0.19 },
+            { periode: "Mar-2024", blok: "C3", area: 50, tbs: 1200, cpoJual: 250000, hargaCPO: 13300, oer: 0.21 },
+        ];
+
+        let currentData = rawData;
+        let dataTable;
+
+        // 📊 Fungsi untuk Menginisialisasi Grafik
+        function initCharts(data) {
+            const aggregated = data.reduce((acc, item) => {
+                acc[item.periode] = acc[item.periode] || { tbs: 0, cpoJual: 0, hargaTotal: 0, count: 0, oerTotal: 0, area: 0 };
+                acc[item.periode].tbs += item.tbs;
+                acc[item.periode].cpoJual += item.cpoJual;
+                acc[item.periode].hargaTotal += item.hargaCPO;
+                acc[item.periode].count += 1;
+                acc[item.periode].oerTotal += item.oer;
+                acc[item.periode].area += item.area;
+                return acc;
+            }, {});
+
+            const labels = Object.keys(aggregated).sort();
+            const tbsData = labels.map(key => aggregated[key].tbs);
+            const hargaData = labels.map(key => (aggregated[key].hargaTotal / aggregated[key].count).toFixed(0));
+            const oerData = labels.map(key => (aggregated[key].oerTotal / aggregated[key].count).toFixed(2));
+ 
+            // --- Grafik 1: Produksi TBS (Batang) ---
+            new Chart(document.getElementById('chartProduksi'), {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Produksi TBS (Ton)',
+                        data: tbsData,
+                        backgroundColor: var(--palm-green-light),
+                        borderColor: var(--palm-green-dark),
+                        borderWidth: 1
+                    }]
+                },
+                options: { responsive: true, scales: { y: { beginAtZero: true } } }
+            });
+
+            // --- Grafik 2: Harga Jual CPO (Garis) ---
+            new Chart(document.getElementById('chartHarga'), {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Harga CPO Rata-rata (Rp/Kg)',
+                        data: hargaData,
+                        fill: false,
+                        borderColor: '#ff9800', /* Aksen Oranye untuk Harga */
+                        tension: 0.1
+                    }]
+                },
+                options: { responsive: true, scales: { y: { beginAtZero: false } } }
+            });
+ 
+            // --- Grafik 3: Distribusi Penjualan (Lingkaran) ---
+            // Asumsi produk: CPO dan PKO
+            const totalCPO = data.reduce((sum, item) => sum + item.cpoJual, 0);
+            const totalPKO = totalCPO * 0.05; // Estimasi PKO 5% dari CPO (simulasi)
+            new Chart(document.getElementById('chartPenjualanPie'), {
+                type: 'pie',
+                data: {
+                    labels: ['Minyak Sawit Mentah (CPO)', 'Minyak Inti Sawit (PKO)'],
+                    datasets: [{
+                        data: [totalCPO, totalPKO],
+                        backgroundColor: [
+                            var(--palm-green-light),
+                            '#8d6e63' /* Coklat untuk PKO */
+                        ],
+                        hoverOffset: 4
+                    }]
+                },
+                options: { responsive: true }
+            });
+
+            // --- Grafik 4: Rendemen OER (Batang) ---
+            new Chart(document.getElementById('chartRendemen'), {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Rendemen (OER) Rata-rata',
+                        data: oerData,
+                        backgroundColor: var(--palm-accent),
+                        borderColor: var(--palm-green-dark),
+                        borderWidth: 1
+                    }]
+                },
+                options: { responsive: true, scales: { y: { beginAtZero: true, max: 0.3 } } }
+            });
+
+        }
+
+        // 📈 Fungsi untuk Memperbarui KPI
+        function updateKPIs(data) {
+            const totalTbs = data.reduce((sum, item) => sum + item.tbs, 0);
+            const totalArea = data.reduce((sum, item) => item.area, 0); // Asumsi total area tetap 200 Ha (atau total dari semua blok yang terfilter)
+            const totalHarga = data.reduce((sum, item) => sum + item.hargaCPO, 0);
+            const count = data.length;
+
+            const avgHarga = count > 0 ? (totalHarga / count) : 0;
+            const avgYield = totalArea > 0 ? (totalTbs / totalArea).toFixed(2) : 0;
+
+            document.getElementById('kpiTotalProduksi').innerText = totalTbs.toLocaleString('id-ID');
+            document.getElementById('kpiRataHarga').innerText = 'Rp ' + avgHarga.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+            document.getElementById('kpiTotalArea').innerText = totalArea.toLocaleString('id-ID') + ' Ha';
+            document.getElementById('kpiYield').innerText = avgYield.toLocaleString('id-ID') + ' Ton/Ha';
+        }
+
+        // <table> Fungsi untuk Mengisi dan Menginisialisasi DataTables
+        function initDataTable(data) {
+            // Hapus tabel lama jika sudah ada
+            if (dataTable) {
+                dataTable.destroy();
+                $('#dataTabel tbody').empty();
+            }
+
+            const tableData = data.map(item => [
+                item.periode,
+                item.area + ' Ha (' + item.blok + ')',
+                item.tbs.toLocaleString('id-ID'),
+                item.cpoJual.toLocaleString('id-ID'),
+                'Rp ' + item.hargaCPO.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 }),
+                (item.oer * 100).toFixed(1) + '%'
+            ]);
+
+            dataTable = $('#dataTabel').DataTable({
+                data: tableData,
+                responsive: true,
+                pageLength: 10,
+                order: [[0, 'asc']]
+            });
+        }
+
+        // 🔄 Fungsi Filter
+        document.getElementById('filterBulan').addEventListener('change', function() {
+            const selectedPeriode = this.value;
+ 
+            // Hapus semua chart lama
+            Chart.getChart('chartProduksi')?.destroy();
+            Chart.getChart('chartHarga')?.destroy();
+            Chart.getChart('chartPenjualanPie')?.destroy();
+            Chart.getChart('chartRendemen')?.destroy();
+
+            if (selectedPeriode === 'Semua') {
+                currentData = rawData;
+            } else {
+                currentData = rawData.filter(item => item.periode === selectedPeriode);
+            }
+
+            // Inisialisasi ulang
+            updateKPIs(currentData);
+            initDataTable(currentData);
+            initCharts(currentData);
+        });
+
+        // ⬇️ Fungsi Unduh Data (CSV)
+        function unduhData() {
+            const dataToDownload = currentData.map(item => ({
+                Periode: item.periode,
+                Blok: item.blok,
+                Area_Ha: item.area,
+                Produksi_TBS_Ton: item.tbs,
+                Penjualan_CPO_Kg: item.cpoJual,
+                Harga_CPO_Rp_Kg: item.hargaCPO,
+                OER: item.oer
+            }));
+
+            if (dataToDownload.length === 0) {
+                alert("Tidak ada data untuk diunduh.");
+                return;
+            }
+
+            const header = Object.keys(dataToDownload[0]).join(',');
+            const rows = dataToDownload.map(row => Object.values(row).join(','));
+            const csv = [header, ...rows].join('\n');
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'data_kelapa_sawit_' + document.getElementById('filterBulan').value + '.csv';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // 🚀 Inisialisasi Aplikasi Saat Dokumen Siap
+        $(document).ready(function() {
+            updateKPIs(rawData);
+            initDataTable(rawData);
+            initCharts(rawData);
+        });
+
+    </script>
+</body>
+</html>
